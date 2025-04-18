@@ -49,10 +49,7 @@ class Product extends Model
         return $this->belongsTo(Category::class, 'category_id');
     }
     // protected $fillable = ['name', 'price', 'stock'];
-    public function gender()
-    {
-        return $this->belongsTo(Gender::class);
-    }
+    
     public function brand()
     {
        return $this->belongsTo(Brand::class);
