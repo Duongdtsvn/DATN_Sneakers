@@ -218,143 +218,132 @@
     </div> <!-- container-fluid -->
 @endsection
 @section('js')
-            <script src="{{asset('admins/libs/quill/quill.core.js')}}"></script>
-            <script src="{{asset('admins/libs/quill/quill.min.js')}}"></script>
+    <script src="{{asset('admins/libs/quill/quill.core.js')}}"></script>
+    <script src="{{asset('admins/libs/quill/quill.min.js')}}"></script>
 
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    var quill = new Quill("#quill-editor", {
-                        theme: "snow",
-                    })
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var quill = new Quill("#quill-editor", {
+                theme: "snow",
+            })
 
-                    // Hiển thị nội dung cũ 
-                    var old_content = `{!! $product->description !!}`;
-                    quill.root.innerHTML = old_content
+            // Hiển thị nội dung cũ 
+            var old_content = `{!! $product->description !!}`;
+            quill.root.innerHTML = old_content
 
-                    // Cập nhật lại textarea ẩn khi nội dung của  quill-editor thay đổi
-                    quill.on('text-change', function () {
-                        var html = quill.root.innerHTML;
-                        document.getElementById('editor_content').value = html
-                    })
-                })
+            // Cập nhật lại textarea ẩn khi nội dung của  quill-editor thay đổi
+            quill.on('text-change', function () {
+                var html = quill.root.innerHTML;
+                document.getElementById('editor_content').value = html
+            })
+        })
 
-            </script>
+    </script>
 
-            <script>
-                function showIamge(event) {
-                    const img_product = document.getElementById('img_product');
-                    const file = event.target.files[0];
-                    const reader = new FileReader();
-                    reader.onload = function () {
-                        img_product.src = reader.result;
-                        img_product.style.display = 'block';
-                    }
-                    if (file) {
-                        reader.readAsDataURL(file)
-                    }
+    <script>
+        function showIamge(event) {
+            const img_product = document.getElementById('img_product');
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function () {
+                img_product.src = reader.result;
+                img_product.style.display = 'block';
+            }
+            if (file) {
+                reader.readAsDataURL(file)
+            }
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var rowCount = {{count($product->imageProduct)}};
+            document.getElementById('add-row').addEventListener('click', function () {
+                var tableBody = document.getElementById('image-table-body')
+                var newRow = document.createElement('tr');
+                  newRow = `
+                        <td class="d-flex align-items-center">
+                             <img id="preview_${rowCount}" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0Wr3oWsq6KobkPqznhl09Wum9ujEihaUT4Q&s" alt="hinh anh"
+                                 style="width:50px" class="me-3">
+                             <input type="file" id="hinh_anh" name="list_image[id_${rowCount}]"
+                                 class="form-control" onchange="previewImage(this,${rowCount})">                                                            
+                         </td>
+                         <td class="">
+                             <i class="mdi mdi-delete text-muted fs-18 rounded-2 border p-1" 
+                             style="cursor: pointer" onclick="removeRow(this)"></i>
+                         </td>
+                        `;
+                tableBody.appendChild(newRow);
+                rowCount++;
+            });
+        })
+
+        function previewImage(input, rowIndex) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById(`preview_${rowIndex}`).setAttribute('src', e.target.result)
                 }
-            </script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    var rowCount = {{count($product->imageProduct)}};
-                    document.getElementById('add-row').addEventListener('click', function () {
-                        var tableBody = document.getElementById('image-table-body')
-                        var newRow = document.createElement('tr');
-                        let newRow = `
-                                    <div class="variant-row row align-items-end mb-3">
-                                        <div class="col-md-2">
-                                            <select class="form-select" name="product_variants[${index}][product_size_id]">
-                                                @foreach ($size as $item)
-                                                    <option value="{{ $item->id }}">{{ $item->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input type="number" class="form-control" name="product_variants[${index}][quantity]" placeholder="Quantity">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" name="product_variants[${index}][status]">
-                                                <option value="1" selected>Hiển thị</option>
-                                                <option value="0">Ẩn</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="remove-row btn btn-danger">Xóa</button>
-                                        </div>
-                                    </div>
-                                `;
-                        tableBody.appendChild(newRow);
-                        rowCount++;
-                    });
-                })
+                reader.readAsDataURL(input.files[0])
+            }
+        }
+        function removeRow(item) {
+            var row = item.closest('tr');
+            row.remove();
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            let index =
+                        {{ count(old('product_variants', [0 => []])) - 1 }}; // Lấy số lượng biến thể đã có từ old()
 
-                function previewImage(input, rowIndex) {
-                    if (input.files && input.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = function (e) {
-                            document.getElementById(`preview_${rowIndex}`).setAttribute('src', e.target.result)
-                        }
-                        reader.readAsDataURL(input.files[0])
-                    }
-                }
-                function removeRow(item) {
-                    var row = item.closest('tr');
-                    row.remove();
-                }
-            </script>
-            <script>
-                $(document).ready(function () {
-                    let index =
-                                {{ count(old('product_variants', [0 => []])) - 1 }}; // Lấy số lượng biến thể đã có từ old()
+            // Thêm biến thể mới
+            $("#add-variant").click(function () {
+                index++;
+                let newRow = `
+                        <div class="variant-row row align-items-end mb-3">
+                             <div class="col-md-2">
+                                <select class="form-select" name="product_variants[${index}][product_size_id]">
+                                    @foreach ($size as $item)
+                                        <option value="{{ $item->id }}">
+                                            {{ $item->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>                         
+                            <div class="col-md-2">
+                                <input type="number" class="form-control" name="product_variants[${index}][quantity]" 
+                                       placeholder="Quantity">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="remove-row btn btn-danger">Xóa</button>
+                            </div>
+                        </div>
+                    `;
+                $("#variant-table").append(newRow);
+            });
 
-                    // Thêm biến thể mới
-                    $("#add-variant").click(function () {
-                        index++;
-                        let newRow = `
-                                <div class="variant-row row align-items-end mb-3">
-                                     <div class="col-md-2">
-                                        <select class="form-select" name="product_variants[${index}][product_size_id]">
-                                            @foreach ($size as $item)
-                                                <option value="{{ $item->id }}">
-                                                    {{ $item->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>                         
-                                    <div class="col-md-2">
-                                        <input type="number" class="form-control" name="product_variants[${index}][quantity]" 
-                                               placeholder="Quantity">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button type="button" class="remove-row btn btn-danger">Xóa</button>
-                                    </div>
-                                </div>
-                            `;
-                        $("#variant-table").append(newRow);
-                    });
+            // Xóa biến thể
+            $(document).on("click", ".remove-row", function () {
+                $(this).closest(".variant-row").remove();
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var quill = new Quill("#quill-editor1", {
+                theme: "snow",
+            })
 
-                    // Xóa biến thể
-                    $(document).on("click", ".remove-row", function () {
-                        $(this).closest(".variant-row").remove();
-                    });
-                });
-            </script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    var quill = new Quill("#quill-editor1", {
-                        theme: "snow",
-                    })
+            // Hiển thị nội dung cũ 
+            var old_content = `{!! $product->care_instructions !!}`;
+            quill.root.innerHTML = old_content
 
-                    // Hiển thị nội dung cũ 
-                    var old_content = `{!! $product->care_instructions !!}`;
-                    quill.root.innerHTML = old_content
+            // Cập nhật lại textarea ẩn khi nội dung của  quill-editor thay đổi
+            quill.on('text-change', function () {
+                var html = quill.root.innerHTML;
+                document.getElementById('editor_content1').value = html
+            })
+        })
 
-                    // Cập nhật lại textarea ẩn khi nội dung của  quill-editor thay đổi
-                    quill.on('text-change', function () {
-                        var html = quill.root.innerHTML;
-                        document.getElementById('editor_content1').value = html
-                    })
-                })
-
-            </script>
+    </script>
 @endsection
