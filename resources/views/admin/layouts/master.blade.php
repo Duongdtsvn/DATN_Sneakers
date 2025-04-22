@@ -13,7 +13,7 @@
 
     @include('admin.layouts.partials.css')
 
-    <style>
+    {{-- <style>
         /* Ép hiển thị content và form */
         .content-page {
             display: block !important;
@@ -32,7 +32,7 @@
             visibility: visible !important;
             opacity: 1 !important;
         }
-    </style>
+    </style> --}}
 </head>
 
 <body data-menu-color="light" data-sidebar="default">
@@ -78,7 +78,7 @@
         <script src="{{ asset('js/analytics-dashboard.init.js') }}"></script>
     @endif
     @stack('scripts')
-
+    @yield('js')
 </body>
 
 </html>

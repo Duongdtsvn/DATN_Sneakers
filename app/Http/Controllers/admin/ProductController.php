@@ -332,11 +332,7 @@ class ProductController extends Controller
         'product_variants.*.status.in' => 'Trạng thái chỉ được là 0 hoặc 1!',
     ]);
 
-    $newVariantSizeIds = [];
-
     foreach ($validatedData['product_variants'] as $variant) {
-        $newVariantSizeIds[] = $variant['product_size_id'];
-
         ProductVariant::updateOrCreate(
             [
                 'product_id' => $product->id,
@@ -349,14 +345,9 @@ class ProductController extends Controller
         );
     }
 
-    // Xoá các biến thể không còn trong danh sách mới
-    ProductVariant::where('product_id', $product->id)
-        ->whereNotIn('product_size_id', $newVariantSizeIds)
-        ->delete();
+
+
 }
-
-
-
 
 
 
