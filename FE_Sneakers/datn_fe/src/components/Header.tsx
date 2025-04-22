@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FiShoppingCart, FiUser, FiMenu, FiX, FiChevronDown } from 'react-icons/fi'
+import { FiShoppingCart, FiUser, FiMenu, FiX, FiChevronDown, FiHeart } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +24,7 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false)
   const [mobileProductOpen, setMobileProductOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const [wishlistCount, setWishlistCount] = useState(0)
   const { cartCount, updateCartCount } = useCart()
   const navigate = useNavigate()
   const isLoggedIn = !!localStorage.getItem('token')
@@ -66,10 +67,8 @@ const Header = () => {
         }
       })
 
-      // Xử lý dữ liệu
       let userData: any = response.data
 
-      // Kiểm tra cấu trúc
       if (response.data.data) {
         userData = response.data.data
       } else if (response.data.user) {
@@ -82,7 +81,6 @@ const Header = () => {
         return
       }
 
-      // Tìm tên
       const userName = userData.name || userData.full_name || userData.username || 'User'
       if (userName === 'User') {
         console.warn('[DEBUG] No name field found, falling back to "User"')
@@ -90,7 +88,6 @@ const Header = () => {
         console.log('[DEBUG] Found name:', userName)
       }
 
-      // Tìm role_id
       const roleId = Number(userData.role_id) || 3
       if (![1, 2, 3].includes(roleId)) {
         console.warn('[DEBUG] Invalid role_id:', roleId, 'Defaulting to 3')
@@ -123,15 +120,30 @@ const Header = () => {
     }
   }
 
-  // Gọi API khi component mount hoặc isLoggedIn thay đổi
+  // Hàm lấy số lượng sản phẩm trong wishlist từ localStorage
+  const updateWishlistCount = () => {
+    const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]')
+    setWishlistCount(wishlist.length)
+  }
+
+  // Gọi API và cập nhật wishlist khi component mount hoặc isLoggedIn thay đổi
   useEffect(() => {
     fetchCartCount()
     fetchUserInfo()
+    updateWishlistCount()
+
+    // Lắng nghe sự kiện storage để cập nhật wishlistCount khi localStorage thay đổi
+    const handleStorageChange = () => {
+      updateWishlistCount()
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [isLoggedIn])
 
   const handleLogout = () => {
     localStorage.clear()
     updateCartCount(0)
+    setWishlistCount(0)
     setUser(null)
     toast.success(t('logout_success'), { autoClose: 1000 })
     navigate('/login')
@@ -143,11 +155,21 @@ const Header = () => {
     setMobileProductOpen(false)
   }
 
+  const text = 'PoleSneakers'
+
   return (
     <header className='bg-white shadow-md sticky top-0 z-50 p-2'>
       <div className='container mx-auto px-6 md:px-20 py-4 flex justify-between items-center'>
-        <Link to='/' className='text-3xl font-bold text-gray-800 tracking-wide'>
-          Pole
+        <Link to='/' className='flex space-x-0.5 text-2xl font-serif font-bold tracking-wider'>
+          {text.split('').map((char, index) => (
+            <span
+              key={index}
+              className='text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-gray-500 animate-blink'
+              style={{ animationDelay: `${index * 0.15}s` }}
+            >
+              {char}
+            </span>
+          ))}
         </Link>
 
         <nav className='hidden md:flex space-x-8'>
@@ -219,6 +241,15 @@ const Header = () => {
             </div>
           )}
 
+          <Link to='/wishlist' className='relative icon-link'>
+            <FiHeart />
+            {wishlistCount > 0 && (
+              <span className='absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center'>
+                {wishlistCount}
+              </span>
+            )}
+          </Link>
+
           <Link to='/cart' className='relative icon-link'>
             <FiShoppingCart />
             {cartCount > 0 && (
@@ -274,6 +305,9 @@ const Header = () => {
             </Link>
             <Link to='/contact' className='mobile-nav-link' onClick={handleLinkClick}>
               {t('contact')}
+            </Link>
+            <Link to='/wishlist' className='mobile-nav-link' onClick={handleLinkClick}>
+              {t('wishlist')} {wishlistCount > 0 && `(${wishlistCount})`}
             </Link>
             {isLoggedIn && (
               <>

@@ -14,8 +14,8 @@ class OrderPolicy
      */
     public function before(User $user, string $ability): bool|null
     {
-        // Giả sử bạn có role 'admin' hoặc phương thức isAdmin()
-        if ($user->hasRole('admin')) {
+        // Kiểm tra quyền admin bằng cách kiểm tra role_id
+        if ($user->role_id === 1) { // 1 là role_id của admin
             return true;
         }
         return null;

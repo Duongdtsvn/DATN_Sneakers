@@ -39,7 +39,7 @@ interface Product {
 const CartPage: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { cartCount, updateCartCount } = useCart()
+  const { cartCount, updateCartCount, clearCart } = useCart()
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [totalCartPrice, setTotalCartPrice] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)

@@ -13,7 +13,7 @@ const Banner = () => {
     'https://i1252.photobucket.com/albums/hh579/Shopburin/banner01_zpsddaf983d.jpg',
     'https://giaysneaker.store/media/wysiwyg/slidershow/home-12/banner_ADIDAS.jpg',
     'https://www.caoto.vn/images/slider-2.png'
-  ]
+  ] 
 
   const [currentImage, setCurrentImage] = useState(0)
 

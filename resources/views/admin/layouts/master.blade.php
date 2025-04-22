@@ -1,26 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 
-
-<!-- Mirrored from zoyothemes.com/tapeli/html/ by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 16 Jul 2024 08:33:02 GMT -->
-<!-- Added by HTTrack -->
-<meta http-equiv="content-type" content="text/html;charset=UTF-8" /><!-- /Added by HTTrack -->
-
 <head>
-
     <meta charset="utf-8" />
     <title>Admin Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A fully featured admin theme which can be used to build CRM, CMS, etc." />
     <meta name="author" content="Zoyothemes" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     @include('admin.layouts.partials.css')
 
+    <style>
+        /* Ép hiển thị content và form */
+        .content-page {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            min-height: 100vh !important;
+            padding-bottom: 60px !important;
+        }
+        .content {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .card-footer, .input-group, #message-form, #send-message {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    </style>
 </head>
-
-<!-- body start -->
 
 <body data-menu-color="light" data-sidebar="default">
 
@@ -36,10 +49,9 @@
         <!-- Left Sidebar End -->
 
         <!-- ============================================================== -->
-         <!-- Start Page Content here -->
-         <!-- ============================================================== -->
- 
-         <div class="content-page">
+        <!-- Start Page Content here -->
+        <!-- ============================================================== -->
+        <div class="content-page">
             <div class="content">
 
                 <!-- Start Content-->
@@ -49,11 +61,10 @@
             </div> <!-- content -->
 
             <!-- Footer Start -->
-
+            @include('admin.layouts.components.footer')
             <!-- end Footer -->
 
         </div>
-        @include('admin.layouts.components.footer')
         <!-- ============================================================== -->
         <!-- End Page content -->
         <!-- ============================================================== -->
@@ -62,11 +73,12 @@
     <!-- END wrapper -->
 
     @include('admin.layouts.partials.js')
-    @yield('js')
-
+    @if(Route::currentRouteName() === 'admin.dashboard')
+        <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.min.js"></script>
+        <script src="{{ asset('js/analytics-dashboard.init.js') }}"></script>
+    @endif
+    @stack('scripts')
 
 </body>
-
-<!-- Mirrored from zoyothemes.com/tapeli/html/ by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 16 Jul 2024 08:34:03 GMT -->
 
 </html>

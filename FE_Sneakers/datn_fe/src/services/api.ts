@@ -77,7 +77,7 @@ export const cancelOrder = async (
         'Content-Type': 'application/json',
         Accept: 'application/json'
       },
-      body: JSON.stringify({ cho_xac_nhan_huy: reason })
+      body: JSON.stringify({ cancellation_reason: reason })
     })
 
     if (!response.ok) {

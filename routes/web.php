@@ -14,6 +14,7 @@ use App\Http\Controllers\admin\ProductVariantController;
 use App\Http\Controllers\admin\PromotionController;
 use App\Http\Controllers\admin\ReviewController;
 use App\Http\Controllers\admin\SettingController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\admin\SizeController;
 use App\Models\ProductReview;
 use App\Http\Controllers\admin\DashboardStatisticsController;
@@ -45,6 +46,10 @@ Route::prefix('admin')
             Route::resource('banners', BannerController::class);
         });
 
+        Route::middleware(['auth', 'permission:manage_banners'])->group(function () {
+            Route::get('chats', [ChatController::class, 'adminIndex'])->name('chats.index');
+        });
+
         Route::middleware(['auth', 'permission:manage_news'])->group(function () {
             Route::resource('news', NewsController::class);
         });
@@ -66,6 +71,7 @@ Route::prefix('admin')
                 ->as('categories.')
                 ->group(function () {
                     Route::get('/', [CategoryController::class, 'index'])->name('index');
+                    
                     Route::get('create', [CategoryController::class, 'create'])->name('create');
                     Route::post('store', [CategoryController::class, 'store'])->name('store');
                     Route::get('{id}/edit', [CategoryController::class, 'edit'])->name('edit');

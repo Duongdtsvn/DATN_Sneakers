@@ -100,7 +100,17 @@
   "message_required": "Message is required",
   "send_message": "Send Message",
   "message_sent_success": "Message sent successfully, we will contact you soon!",
-
+  "details": "Details",
+  "collapse": "Collapse",
+  "order_date": "Order Date",
+  "status": "Status",
+  "delivered": "Delivered",
+  "cancelled": "Cancelled",
+  "promotion": "Promotion",
+  "recipient_name": "Recipient Name",
+  "recipient_phone": "Recipient Phone",
+  "recipient_address": "Recipient Address",
+  "order_code": "Order Code",
   "authentic_commitment": "Authentic Commitment",
   "authentic_100": "100% Authentic",
   "authentic_description": "Commitment to 100% genuine products",
@@ -110,7 +120,8 @@
   "support_24_7": "24/7 Support",
   "support_24_24": "Supporting 24/24",
   "support_description": "Customer service always available",
-
+  "my_orders": "My Orders",
+  "all_orders": "All Orders",
   "footer_brand": "Sneakers",
   "footer_brand_description": "Specializing in providing genuine sneakers with a variety of styles.",
   "about_us": "About Us",
@@ -328,10 +339,12 @@
   "no_token": "No token found. Please login again.",
   "fetch_user_error": "Unable to fetch user information.",
   "no_products_to_checkout": "No products to checkout.",
-
   "no_description": "No description available.",
-
   "no_images_to_display": "No images to display.",
-
-  "proceeding_to_checkout": "Proceeding to checkout..."
+  "proceeding_to_checkout": "Proceeding to checkout...",
+  "add_to_wishlist": "Add to Wishlist",
+  "remove_from_wishlist": "Remove from Wishlist",
+  "select_size_before_adding_to_wishlist": "Please select a size before adding to wishlist!",
+  "added_to_wishlist": "Added {{name}} (size {{size}}) to wishlist",
+  "removed_from_wishlist": "Removed {{name}} (size {{size}}) from wishlist"
 }

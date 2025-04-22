@@ -11,9 +11,12 @@
         "guzzlehttp/guzzle": "^7.9",
         "intervention/image": "2.7",
         "laravel/framework": "^10.10",
-        "laravel/sanctum": "*",
+        "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
-        "propaganistas/laravel-phone": "^5.3"
+        "propaganistas/laravel-phone": "^5.3",
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "pusher/pusher-php-server": "^7.2"
+
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.14",

@@ -3,38 +3,23 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
+import { useCart } from '../contexts/CartContext'
 
 const MomoCallback: React.FC = () => {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
+  const { fetchCartCount } = useCart()
   const [isProcessing, setIsProcessing] = useState(true)
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get query parameters from URL
-        const query = new URLSearchParams(location.search)
-        const resultCode = query.get('resultCode')
-        const orderId = query.get('orderId')
-        const orderCode = query.get('orderCode') || orderId
-
-        if (!orderId) {
-          throw new Error('Missing order information')
-        }
-
-        // Get the pending order from localStorage
-        const pendingOrderStr = localStorage.getItem('pendingOrder')
-        if (!pendingOrderStr) {
-          throw new Error('No pending order found')
-        }
-
-        const pendingOrder = JSON.parse(pendingOrderStr)
         const token = localStorage.getItem('token')
-        
-        if (!token) {
-          throw new Error(t('no_token'))
-        }
+        if (!token) throw new Error(t('no_token'))
+
+        const pendingOrder = JSON.parse(localStorage.getItem('pendingOrder') || '{}')
+        const { orderId, resultCode } = pendingOrder
 
         if (resultCode === '0') {
           // Payment successful - create orders
@@ -64,11 +49,15 @@ const MomoCallback: React.FC = () => {
           })
 
           await Promise.all(orderPromises)
+
+          // Update cart count immediately after successful payment
+          await fetchCartCount()
+
           toast.success(t('payment_successful'), { autoClose: 2000 })
           localStorage.removeItem('pendingOrder')
-          navigate('/order-success', { 
-            state: { 
-              orderCode,
+          navigate('/order-success', {
+            state: {
+              orderCode: orderId,
               status: 'success',
               message: t('payment_successful')
             }
@@ -78,7 +67,7 @@ const MomoCallback: React.FC = () => {
           toast.error(t('payment_failed'), { autoClose: 2000 })
           navigate('/order-success', {
             state: {
-              orderCode,
+              orderCode: orderId,
               status: 'failed',
               message: t('payment_failed')
             }
@@ -94,7 +83,7 @@ const MomoCallback: React.FC = () => {
     }
 
     handleCallback()
-  }, [location, navigate, t])
+  }, [location, navigate, t, fetchCartCount])
 
   return (
     <div className='min-h-screen bg-gray-100 font-sans flex flex-col items-center justify-center'>

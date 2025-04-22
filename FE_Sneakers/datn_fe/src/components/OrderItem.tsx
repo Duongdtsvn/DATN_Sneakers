@@ -13,6 +13,7 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onCancel }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const canCancel = order?.status && ['cho_xac_nhan', 'dang_chuan_bi'].includes(order.status)
+  const isPendingCancellation = order?.status === 'cho_xac_nhan_huy'
 
   if (!order) {
     console.error('OrderItem: Invalid order data')
@@ -54,6 +55,9 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onCancel }) => {
             >
               {t('cancel')}
             </button>
+          )}
+          {isPendingCancellation && (
+            <span className='px-3 py-1 bg-yellow-500 text-white rounded-md text-sm'>{t('pending_cancellation')}</span>
           )}
         </div>
       </div>
