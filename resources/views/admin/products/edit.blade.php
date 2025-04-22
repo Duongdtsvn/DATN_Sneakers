@@ -124,7 +124,7 @@
                                                                 @foreach ($size as $item)
                                                                     <option value="{{ $item->id }}"
                                                                         {{  old("product_variants.$index.product_size_id", $variant->product_size_id)
-                                                                                    == $item->id ? 'selected' : '' }}>
+            == $item->id ? 'selected' : '' }}>
                                                                         {{ $item->name }}
                                                                     </option>
                                                                 @endforeach
@@ -256,28 +256,26 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var rowCount = {{count($product->imageProduct)}};
+            var rowCount = 1;
             document.getElementById('add-row').addEventListener('click', function () {
                 var tableBody = document.getElementById('image-table-body')
                 var newRow = document.createElement('tr');
-                  newRow = `
-                        <td class="d-flex align-items-center">
-                             <img id="preview_${rowCount}" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0Wr3oWsq6KobkPqznhl09Wum9ujEihaUT4Q&s" alt="hinh anh"
-                                 style="width:50px" class="me-3">
-                             <input type="file" id="hinh_anh" name="list_image[id_${rowCount}]"
-                                 class="form-control" onchange="previewImage(this,${rowCount})">                                                            
-                         </td>
-                         <td class="">
-                             <i class="mdi mdi-delete text-muted fs-18 rounded-2 border p-1" 
-                             style="cursor: pointer" onclick="removeRow(this)"></i>
-                         </td>
-                        `;
-
+                newRow.innerHTML = ` 
+                                <td class="d-flex align-items-center">
+                                    <img id="preview_${rowCount}" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0Wr3oWsq6KobkPqznhl09Wum9ujEihaUT4Q&s" alt="hinh anh"
+                                        style="width:50px" class="me-3">
+                                    <input type="file" id="hinh_anh" name="list_image[id_${rowCount}]"
+                                        class="form-control" onchange="previewImage(this,${rowCount})">                                                            
+                                </td>
+                                <td class="">
+                                    <i class="mdi mdi-delete text-muted fs-18 rounded-2 border p-1" 
+                                    style="cursor: pointer" onclick="removeRow(this)"></i>
+                                </td>
+                                `;
                 tableBody.appendChild(newRow);
                 rowCount++;
             });
         })
-
 
         function previewImage(input, rowIndex) {
             if (input.files && input.files[0]) {
@@ -296,7 +294,7 @@
     <script>
         $(document).ready(function () {
             let index =
-                        {{ count(old('product_variants', [0 => []])) - 1 }}; // Lấy số lượng biến thể đã có từ old()
+                    {{ count(old('product_variants', [0 => []])) - 1 }}; // Lấy số lượng biến thể đã có từ old()
 
             // Thêm biến thể mới
             $("#add-variant").click(function () {
