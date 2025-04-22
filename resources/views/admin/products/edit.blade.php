@@ -124,7 +124,7 @@
                                                                 @foreach ($size as $item)
                                                                     <option value="{{ $item->id }}"
                                                                         {{  old("product_variants.$index.product_size_id", $variant->product_size_id)
-            == $item->id ? 'selected' : '' }}>
+                                                                                    == $item->id ? 'selected' : '' }}>
                                                                         {{ $item->name }}
                                                                     </option>
                                                                 @endforeach
@@ -143,13 +143,13 @@
                                                                     {{ $message }}</p>
                                                             @enderror
                                                         </div>
-                                                        <div class="col-md-2 mb-1">
+                                                        {{-- <div class="col-md-2 mb-1">
                                                             <label for="status" class="form-label">Status</label>
                                                             <select class="form-select" name="product_variants[{{ $index }}][status]">
                                                                 <option value="1" {{ old("product_variants.$index.status", $variant->status ?? 1) == 1 ? 'selected' : '' }}>Hiển thị</option>
                                                                 <option value="0" {{ old("product_variants.$index.status", $variant->status ?? 1) == 0 ? 'selected' : '' }}>Ẩn</option>
                                                             </select>
-                                                        </div>
+                                                        </div> --}}
                                                         {{-- <div class="col-md-1">
                                                             <button type="button"class="remove-row btn btn-danger">Xóa</button>
                                                         </div> --}}
@@ -272,10 +272,12 @@
                              style="cursor: pointer" onclick="removeRow(this)"></i>
                          </td>
                         `;
+
                 tableBody.appendChild(newRow);
                 rowCount++;
             });
         })
+
 
         function previewImage(input, rowIndex) {
             if (input.files && input.files[0]) {
@@ -344,6 +346,7 @@
                 document.getElementById('editor_content1').value = html
             })
         })
+
 
     </script>
 @endsection

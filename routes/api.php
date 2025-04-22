@@ -104,6 +104,7 @@ Route::get('/products-related/{id}', [DetailController::class, 'getRelatedProduc
 Route::get('/brands', [HomeController::class, 'getBrands']);
 Route::get('/productbybrand/{id}', [HomeController::class, 'brandsByProduct']);
 Route::get('/products/top-views', [HomeController::class, 'getTopViewedProducts']);
+Route::get('/products/sale', [HomeController::class, 'productSale']);
 Route::middleware('auth:sanctum')->post('/review', [ProductReviewController::class, 'store']);
 Route::get('/products/reviews/{id}', [ProductReviewController::class, 'getReviewsByProduct']);
 
