@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Events\MessageSent;
@@ -14,7 +13,7 @@ class ChatController extends Controller
     public function adminIndex()
     {
         $conversations = Conversation::with(['user', 'messages' => function ($query) {
-            $query->latest()->take(1);
+            $query->latest()->take(1)->with('sender');
         }])->get();
         return view('admin.chats.index', compact('conversations'));
     }
@@ -39,6 +38,12 @@ class ChatController extends Controller
             ->with('sender')
             ->get();
 
+        Log::info('Fetched messages for conversation', [
+            'conversation_id' => $conversationId,
+            'user_id' => $user->id,
+            'message_count' => $messages->count()
+        ]);
+
         return response()->json($messages);
     }
 
@@ -54,13 +59,27 @@ class ChatController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
 
+            $content = $request->input('content');
+            if (empty(trim($content))) {
+                return response()->json(['error' => 'Message content cannot be empty'], 400);
+            }
+
             $message = new Message();
             $message->conversation_id = $conversationId;
             $message->sender_id = $user->id;
-            $message->content = $request->input('content');
+            $message->content = $content;
             $message->save();
 
             $message->load('sender');
+
+            Log::info('Message saved and event triggered', [
+                'conversation_id' => $conversationId,
+                'message_id' => $message->id,
+                'sender_id' => $message->sender_id,
+                'sender_role' => $user->role_id == 3 ? 'user' : 'admin',
+                'content' => $message->content,
+                'channel' => 'conversation.' . $conversationId
+            ]);
 
             event(new MessageSent($message));
 
@@ -88,14 +107,29 @@ class ChatController extends Controller
                 return response()->json(['error' => 'Unauthorized: Only users can create conversations'], 403);
             }
 
+            // Kiểm tra xem user đã có conversation chưa
             $conversation = Conversation::where('user_id', $user->id)->first();
 
-            if (!$conversation) {
-                $conversation = new Conversation();
-                $conversation->user_id = $user->id;
-                $conversation->status = 'open';
-                $conversation->save();
+            if ($conversation) {
+                Log::info('Existing conversation found', [
+                    'user_id' => $user->id,
+                    'conversation_id' => $conversation->id
+                ]);
+                return response()->json($conversation);
             }
+
+            // Tạo conversation mới nếu chưa có
+            $conversation = new Conversation();
+            $conversation->user_id = $user->id;
+            $conversation->status = 'open';
+            $conversation->save();
+
+            Log::info('New conversation created', [
+                'user_id' => $user->id,
+                'conversation_id' => $conversation->id
+            ]);
+
+            event(new \App\Events\NewConversation($conversation));
 
             return response()->json($conversation);
         } catch (\Exception $e) {
@@ -117,9 +151,14 @@ class ChatController extends Controller
 
             $conversations = Conversation::where('user_id', $user->id)
                 ->with(['messages' => function ($query) {
-                    $query->latest()->take(3);
+                    $query->latest()->take(3)->with('sender');
                 }])
                 ->get();
+
+            Log::info('Fetched conversations for user', [
+                'user_id' => $user->id,
+                'conversation_count' => $conversations->count()
+            ]);
 
             return response()->json($conversations);
         } catch (\Exception $e) {
@@ -131,30 +170,27 @@ class ChatController extends Controller
         }
     }
 
-    public function createConversation(Request $request)
+    public function assignConversation(Request $request, $conversationId)
     {
         try {
             $user = Auth::user();
-            if (!$user) {
-                return response()->json(['error' => 'Unauthorized: User not authenticated'], 401);
+            if (!$user || $user->role_id == 3) {
+                return response()->json(['error' => 'Unauthorized: Only admins can assign conversations'], 403);
             }
 
-            if ($user->role_id != 3) {
-                return response()->json(['error' => 'Unauthorized: Only users can create conversations'], 403);
-            }
-
-            $conversation = new Conversation();
-            $conversation->user_id = $user->id;
-            $conversation->status = 'open';
+            $conversation = Conversation::findOrFail($conversationId);
+            $conversation->admin_id = $user->id;
             $conversation->save();
 
-            $conversation->load(['messages' => function ($query) {
-                $query->latest()->take(3);
-            }]);
+            Log::info('Conversation assigned to admin', [
+                'conversation_id' => $conversationId,
+                'admin_id' => $user->id
+            ]);
 
-            return response()->json($conversation, 201);
+            return response()->json(['message' => 'Conversation assigned successfully']);
         } catch (\Exception $e) {
-            Log::error('Error creating conversation: ' . $e->getMessage(), [
+            Log::error('Error assigning conversation: ' . $e->getMessage(), [
+                'conversation_id' => $conversationId,
                 'user_id' => Auth::id(),
                 'stack' => $e->getTraceAsString()
             ]);
