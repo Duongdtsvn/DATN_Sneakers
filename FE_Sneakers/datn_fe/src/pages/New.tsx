@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { FiChevronLeft, FiChevronRight, FiFileText } from 'react-icons/fi'
 
 interface News {
   id: number
@@ -25,7 +26,7 @@ const NewsList: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string>('')
   const [currentPage, setCurrentPage] = useState<number>(1)
-  const itemsPerPage = 8
+  const itemsPerPage = 4
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -73,49 +74,64 @@ const NewsList: React.FC = () => {
 
   return (
     <div className='container mx-auto px-4 py-10'>
-      <h1 className='text-2xl font-bold text-center mb-8 text-gray-800'>Tin tức</h1>
+      <h1 className='text-3xl font-bold text-center mb-10 text-gray-800'>Tin tức</h1>
       {message ? (
-        <p className='text-center text-gray-600'>{message}</p>
+        <div className='flex flex-col items-center justify-center bg-white shadow-md rounded-lg p-6 mx-auto max-w-md'>
+          <FiFileText className='text-blue-300 text-6xl mb-4 animate-pulse' />
+          <p className='text-lg text-gray-600 text-center'>{message}</p>
+        </div>
       ) : (
         <>
-          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-screen-xl mx-auto'>
             {paginatedNews.map((news) => (
               <div
                 key={news.id}
-                className='bg-white shadow rounded-lg overflow-hidden cursor-pointer'
+                className='bg-white shadow-lg rounded-xl overflow-hidden cursor-pointer transform hover:shadow-xl transition-all duration-300'
                 onClick={() => handleNewsClick(news.id)}
               >
-                <img
-                  src={news.image}
-                  alt={news.title}
-                  className='w-full h-40 object-cover rounded-t-lg'
-                  onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')}
-                />
+                <div className='relative overflow-hidden'>
+                  <img
+                    src={news.image}
+                    alt={news.title}
+                    className='w-full h-48 object-cover rounded-t-xl transform hover:scale-105 transition-transform duration-300'
+                    onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')}
+                  />
+                  <div className='absolute inset-0 bg-gradient-to-t from-black/30 to-transparent'></div>
+                </div>
                 <div className='p-4'>
-                  <h2 className='text-lg font-semibold text-gray-800 line-clamp-1'>{news.title}</h2>
-                  <p className='text-gray-600 text-xs line-clamp-1'>{news.content}</p>
-                  <p className='text-gray-500 text-xs mt-1'>Tác giả: {news.author || 'Admin'} </p>
-                  <p className='text-gray-500 text-xs mt-1'>
-                    Đăng ngày: {new Date(news.created_at).toLocaleDateString('vi-VN')}
-                  </p>
+                  <h2 className='text-xl font-bold text-gray-800 line-clamp-1 hover:text-blue-600 transition-colors'>
+                    {news.title}
+                  </h2>
+                  <p className='text-sm text-gray-600 line-clamp-2 mt-2'>{news.content}</p>
+                  <div className='flex justify-between items-center mt-3'>
+                    <p className='text-xs text-gray-500'>Tác giả: {news.author || 'Admin'}</p>
+                    <p className='text-xs text-gray-500'>{new Date(news.created_at).toLocaleDateString('vi-VN')}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
           {totalPages > 1 && (
-            <div className='flex justify-center mt-8 space-x-1'>
+            <div className='flex justify-center items-center mt-10 gap-2 flex-wrap'>
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className='px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50'
+                className={`px-4 py-2 rounded-full flex items-center gap-1 text-sm ${
+                  currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
+                <FiChevronLeft />
                 Trước
               </button>
               {Array.from({ length: totalPages }, (_, i) => (
                 <button
                   key={i + 1}
                   onClick={() => handlePageChange(i + 1)}
-                  className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`px-4 py-2 rounded-full text-sm ${
+                    currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
                   {i + 1}
                 </button>
@@ -123,9 +139,14 @@ const NewsList: React.FC = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className='px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50'
+                className={`px-4 py-2 rounded-full flex items-center gap-1 text-sm ${
+                  currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 Sau
+                <FiChevronRight />
               </button>
             </div>
           )}

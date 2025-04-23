@@ -36,6 +36,7 @@ import OrderSuccess from '../components/SuccesOrder'
 import OrdersPage from '../pages/OrdersPage'
 import ChatPopup from '../components/ChatPopup'
 import Wishlist from '../components/Wishlist'
+import CouponPopup from '../components/CouponPopup'
 
 const RoutesConfig = () => {
   return (
@@ -54,6 +55,7 @@ const RoutesConfig = () => {
               <ProductList />
               <TitleWithEffect1 />
               <ProductHot />
+              <CouponPopup />
               <PurchaseNotification />
               <ChatPopup />
             </>
@@ -75,6 +77,7 @@ const RoutesConfig = () => {
         <Route path='/payment' element={<Payment />} />
         <Route path='*' element={<NotFound />} />
         <Route path='/search' element={<SearchResults />} />
+
         <Route path='/momo-callback' element={<MomoCallback />} />
         <Route path='/order-success' element={<OrderSuccess />} />
         <Route path='/about' element={<AboutUs />} />
