@@ -42,7 +42,7 @@ class DetailController extends Controller
         ->where('id', '!=', $product->id)
         ->where('status', true) // Chỉ lấy sản phẩm đang hoạt động
         ->latest() // Sắp xếp theo sản phẩm mới nhất
-        ->take(5) // Giới hạn 5 sản phẩm
+        ->take(7) // Giới hạn 5 sản phẩm
         ->get();
 
         return response()->json([
