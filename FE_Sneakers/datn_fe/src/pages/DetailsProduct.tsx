@@ -111,7 +111,7 @@ const ProductDetail: React.FC = () => {
 
         setProduct(newProduct)
         setSelectedImage(newProduct.imageUrl || (newProduct.images.length > 0 ? newProduct.images[0] : null))
-        fetchSuggestedProducts(productData.data.category.id)
+        fetchSuggestedProducts(id) // Gọi API products-related với id
         setIsFavorite(checkFavoriteStatus(newProduct.id, selectedSizeId))
 
         const token = localStorage.getItem('token')
@@ -141,44 +141,47 @@ const ProductDetail: React.FC = () => {
     }
   }, [product, selectedSizeId])
 
-  const fetchSuggestedProducts = async (categoryId: number) => {
+  const fetchSuggestedProducts = async (productId: number) => {
     setSuggestedLoading(true)
     setSuggestedError(null)
     try {
-      const response = await fetch(`http://localhost:8000/api/productbycategory/${categoryId}`)
+      const response = await fetch(`http://localhost:8000/api/products-related/${productId}`)
       if (!response.ok) {
         throw new Error(t('http_error', { status: response.status }))
       }
       const data = await response.json()
+      console.log('API response:', data) // Log để debug
 
-      if (!data.data || !Array.isArray(data.data)) {
+      // Xử lý dữ liệu linh hoạt (hỗ trợ cả [{}] và { data: [{}] })
+      const products = Array.isArray(data) ? data : data.data || []
+      if (!products || !Array.isArray(products)) {
         throw new Error(t('invalid_suggested_products_data'))
       }
 
-      const suggested = data.data
-        .filter((item: any) => item.id !== id)
-        .slice(0, 6)
+      const suggested = products
+        .slice(0, 6) // Giới hạn 6 sản phẩm
         .map((item: any) => ({
           id: item.id,
-          slug: item.slug || generateSlug(item.product_name),
-          name: item.product_name,
-          original_price: item.original_price.toString(),
-          discounted_price: item.discounted_price.toString(),
-          imageUrl: item.image || 'https://via.placeholder.com/500',
+          slug: item.slug || generateSlug(item.product_name || item.name || 'unknown'),
+          name: item.product_name || item.name || 'Unknown Product',
+          original_price: item.original_price?.toString() || item.price?.toString() || '0',
+          discounted_price:
+            item.discounted_price?.toString() || item.sale_price?.toString() || item.price?.toString() || '0',
+          imageUrl: item.image || item.imageUrl || 'https://via.placeholder.com/500',
           rating: item.rating || 5,
           description: item.description || t('no_description'),
           product_code: item.product_code || 'SP123',
           quantity: item.quantity || 0,
-          images: item.image_product?.map((img: any) => img.image_product) || [],
+          images: item.image_product?.map((img: any) => img.image_product || img) || [],
           sizes:
             item.product_variant?.map((variant: any) => ({
-              size: variant.product_size.name,
-              quantity: variant.quantity,
-              product_size_id: variant.product_size.id
+              size: variant.product_size?.name || variant.size || 'Unknown',
+              quantity: variant.quantity || 0,
+              product_size_id: variant.product_size?.id || variant.product_size_id || 0
             })) || [],
           category: {
-            id: item.category.id,
-            category_name: item.category.category_name
+            id: item.category?.id || item.category_id || 0,
+            category_name: item.category?.category_name || item.category?.name || 'Unknown'
           }
         }))
 
