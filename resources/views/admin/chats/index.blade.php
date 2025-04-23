@@ -2,7 +2,6 @@
 
 @section('content')
     <style>
-        /* Ép hiển thị form và nút gửi */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -18,11 +17,10 @@
             flex: 1 !important;
             overflow-y: auto !important;
             padding: 15px !important;
+            max-height: 50vh !important;
         }
         .chat-container .card-footer {
             display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
             padding: 15px !important;
             background: #f8f9fa !important;
             border-top: 1px solid #dee2e6 !important;
@@ -32,31 +30,28 @@
             display: flex !important;
             align-items: center !important;
             width: 100% !important;
-            visibility: visible !important;
-            opacity: 1 !important;
         }
         .chat-container .input-group {
             display: flex !important;
             width: 100% !important;
             align-items: center !important;
-            visibility: visible !important;
-            opacity: 1 !important;
         }
         .chat-container #message-input {
             flex: 1 !important;
             margin-right: 10px !important;
             height: 40px !important;
-            visibility: visible !important;
-            opacity: 1 !important;
             display: block !important;
         }
         .chat-container #send-message {
             display: inline-block !important;
             height: 40px !important;
-            line-height: 40px !important;
             padding: 0 20px !important;
-            visibility: visible !important;
-            opacity: 1 !important;
+        }
+        .conversation-item.active {
+            background-color: #e9ecef;
+        }
+        .message-item {
+            word-break: break-word;
         }
     </style>
 
@@ -72,14 +67,15 @@
                             href="#"
                             class="list-group-item list-group-item-action conversation-item"
                             data-id="{{ $conv->id }}"
+                            data-user-name="{{ $conv->user->name ?? 'Unknown' }}"
                         >
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ $conv->user->name }}</h6>
+                                <h6 class="mb-1">{{ $conv->user->name ?? 'Unknown' }}</h6>
                                 @if(is_null($conv->admin_id))
                                     <span class="badge bg-danger rounded-pill">New</span>
                                 @endif
                             </div>
-                            <small>
+                            <small class="message-preview">
                                 @if($conv->messages->count() > 0)
                                     {{ Str::limit($conv->messages->last()->content, 30) }}
                                 @else
@@ -133,186 +129,179 @@
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Kiểm tra CSRF token
+            // CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!csrfToken) {
-                console.error('CSRF token not found in meta tag');
+                console.error('CSRF token not found');
                 return;
             }
             console.log('CSRF Token:', csrfToken);
 
-            // Kiểm tra chat-messages element
+            // Elements
             const chatMessages = document.getElementById('chat-messages');
-            if (!chatMessages) {
-                console.error('Element with ID "chat-messages" not found in DOM');
-                return;
-            }
-            console.log('chat-messages element found:', chatMessages);
-
-            // Kiểm tra form elements
             const messageForm = document.getElementById('message-form');
             const conversationIdInput = document.getElementById('conversation-id');
             const messageInput = document.getElementById('message-input');
             const sendButton = document.getElementById('send-message');
-            if (!messageForm || !conversationIdInput || !messageInput || !sendButton) {
-                console.error('Form elements not found:', {
-                    messageForm: !!messageForm,
-                    conversationIdInput: !!conversationIdInput,
-                    messageInput: !!messageInput,
-                    sendButton: !!sendButton
-                });
+            const conversationList = document.getElementById('conversation-list');
+            if (!chatMessages || !messageForm || !conversationIdInput || !messageInput || !sendButton || !conversationList) {
+                console.error('Required elements not found');
                 return;
             }
-            console.log('Form elements found:', {
-                messageForm, conversationIdInput, messageInput, sendButton
-            });
 
-            // Debug CSS của form
-            console.log('Message Form Styles:', window.getComputedStyle(messageForm));
-            console.log('Input Group Styles:', window.getComputedStyle(document.querySelector('.input-group')));
-            console.log('Send Button Styles:', window.getComputedStyle(sendButton));
-
-            // Cấu hình Pusher
+            // Pusher config
             Pusher.logToConsole = true;
-            const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', {
-                cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
+            const pusher = new Pusher('c1c7ff3f6141d637ab84', {
+                cluster: 'ap1',
                 forceTLS: true
             });
 
-            // Kiểm tra Pusher kết nối
-            pusher.connection.bind('connected', function() {
-                console.log('Pusher connected successfully');
-            });
-            pusher.connection.bind('error', function(err) {
-                console.error('Pusher connection error:', err);
-            });
+            pusher.connection.bind('connected', () => console.log('Pusher connected'));
+            pusher.connection.bind('error', (err) => console.error('Pusher error:', err));
 
+            // Auth
             const token = '{{ session("auth_token") ?? Auth::user()->createToken("auth_token")->plainTextToken }}';
             const userId = {{ Auth::id() }};
-            let currentChannel = null;
-
-            // Debug: Kiểm tra token và userId
             console.log('Token:', token);
             console.log('User ID:', userId);
 
-            // Kiểm tra danh sách conversation
-            const conversationList = document.getElementById('conversation-list');
-            if (!conversationList) {
-                console.error('Conversation list element not found');
-                return;
-            }
-            const conversationItems = document.querySelectorAll('.conversation-item');
-            console.log('Conversation Items:', conversationItems.length);
+            let currentChannel = null;
+            let currentConversationId = null;
+            const displayedMessageIds = new Set();
 
-            // Lấy tin nhắn khi chọn conversation
-            conversationItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const conversationId = this.getAttribute('data-id');
-                    console.log('Selected Conversation ID:', conversationId);
-
-                    // Cập nhật conversation ID và enable form
-                    conversationIdInput.value = conversationId;
-                    messageInput.disabled = false;
-                    sendButton.disabled = false;
-                    console.log('Form enabled, Conversation ID set to:', conversationIdInput.value);
-                    console.log('messageInput disabled:', messageInput.disabled);
-                    console.log('sendButton disabled:', sendButton.disabled);
-
-                    // Debug CSS sau khi enable
-                    console.log('Send Button Styles after enable:', window.getComputedStyle(sendButton));
-
-                    // Active conversation
-                    conversationItems.forEach(i => i.classList.remove('active'));
-                    this.classList.add('active');
-
-                    // Lấy tin nhắn
-                    console.log('Fetching messages for conversation:', conversationId);
-                    fetch(`/api/conversations/${conversationId}/messages`, {
+            // Load tin nhắn
+            const loadMessages = (conversationId) => {
+                console.log('Loading messages for conversation:', conversationId);
+                fetch(`/api/conversations/${conversationId}/messages`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('Fetch messages status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(messages => {
+                    chatMessages.innerHTML = '';
+                    displayedMessageIds.clear();
+                    if (messages.length === 0) {
+                        chatMessages.innerHTML = '<p class="text-muted text-center">Chưa có tin nhắn.</p>';
+                        return;
+                    }
+                    messages.forEach(msg => {
+                        appendMessage(msg, conversationId);
+                    });
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                })
+                .then(() => {
+                    // Gán admin
+                    fetch(`/api/conversations/${conversationId}/assign`, {
+                        method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ admin_id: userId })
                     })
                     .then(response => {
-                        console.log('Fetch Messages Status:', response.status);
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(`Failed to fetch messages: ${response.status} - ${err.error || 'Unknown error'}`);
-                            });
+                        if (response.ok) {
+                            console.log('Conversation assigned to admin:', userId);
+                            const convItem = document.querySelector(`.conversation-item[data-id="${conversationId}"]`);
+                            if (convItem) {
+                                const badge = convItem.querySelector('.badge.bg-danger');
+                                if (badge) badge.remove();
+                            }
                         }
-                        return response.json();
                     })
-                    .then(messages => {
-                        console.log('Messages fetched:', messages);
-                        if (!chatMessages) {
-                            console.error('chatMessages is null during messages render');
-                            return;
-                        }
-                        chatMessages.innerHTML = '';
-                        if (messages.length === 0) {
-                            chatMessages.innerHTML = '<p class="text-muted text-center">Chưa có tin nhắn.</p>';
-                            return;
-                        }
-                        messages.forEach(msg => {
-                            const div = document.createElement('div');
-                            div.className = msg.sender_id === userId ? 'text-end mb-2' : 'text-start mb-2';
-                            div.innerHTML = `
-                                <small class="text-muted">${msg.sender.name}</small>
-                                <p class="bg-light p-2 rounded d-inline-block">${msg.content}</p>
-                                <small class="d-block text-muted">${new Date(msg.created_at).toLocaleTimeString()}</small>
-                            `;
-                            chatMessages.appendChild(div);
-                        });
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                    })
-                    .catch(error => {
-                        console.error('Error fetching messages:', error.message);
-                        if (chatMessages) {
-                            chatMessages.innerHTML = '<p class="text-danger text-center">Lỗi khi tải tin nhắn: ' + error.message + '</p>';
-                        } else {
-                            console.error('Cannot display error message: chatMessages is null');
-                        }
-                    });
+                    .catch(error => console.error('Error assigning conversation:', error));
+                })
+                .catch(error => {
+                    console.error('Error fetching messages:', error);
+                    chatMessages.innerHTML = `<p class="text-danger text-center">Lỗi: ${error.message}</p>`;
+                });
+            };
 
-                    // Hủy channel cũ và lắng nghe channel mới qua Pusher
-                    if (currentChannel) {
-                        pusher.unsubscribe(currentChannel);
-                        console.log('Unsubscribed from channel:', currentChannel);
+            // Append tin nhắn
+            const appendMessage = (msg, conversationId) => {
+                console.log('Appending message:', { id: msg.id, content: msg.content });
+                if (displayedMessageIds.has(msg.id)) {
+                    console.log('Duplicate message ignored:', msg.id);
+                    return;
+                }
+                displayedMessageIds.add(msg.id);
+                const div = document.createElement('div');
+                div.className = `message-item ${msg.sender_id === userId ? 'text-end mb-2' : 'text-start mb-2'}`;
+                div.setAttribute('data-message-id', msg.id);
+                div.innerHTML = `
+                    <small class="text-muted">${msg.sender?.name || 'Unknown'}</small>
+                    <p class="bg-light p-2 rounded d-inline-block">${msg.content}</p>
+                    <small class="d-block text-muted">${new Date(msg.created_at).toLocaleTimeString()}</small>
+                `;
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                // Cập nhật preview
+                const convItem = document.querySelector(`.conversation-item[data-id="${conversationId}"]`);
+                if (convItem) {
+                    const preview = convItem.querySelector('.message-preview');
+                    if (preview) {
+                        preview.textContent = msg.content.length > 30 ? msg.content.slice(0, 30) + '...' : msg.content;
                     }
-                    currentChannel = `conversation.${conversationId}`;
-                    console.log('Subscribing to channel:', currentChannel);
-                    const channel = pusher.subscribe(currentChannel);
-                    channel.bind('MessageSent', function(data) {
-                        console.log('New message received via Pusher:', data);
-                        const msg = data.message;
-                        if (!chatMessages) {
-                            console.error('chatMessages is null during Pusher message render');
+                }
+            };
+
+            // Subscribe Pusher
+            const subscribeChannel = (conversationId) => {
+                if (currentChannel) {
+                    pusher.unsubscribe(currentChannel);
+                    console.log('Unsubscribed from:', currentChannel);
+                    currentChannel = null;
+                }
+                currentChannel = `conversation.${conversationId}`;
+                const channel = pusher.subscribe(currentChannel);
+                const eventNames = ['MessageSent', 'App\\Events\\MessageSent', 'App\\Events\\MessageSent'];
+                // Xóa binding cũ
+                eventNames.forEach(eventName => {
+                    channel.unbind(eventName);
+                });
+                // Bind mới
+                eventNames.forEach(eventName => {
+                    channel.bind(eventName, (data) => {
+                        console.log(`Pusher received (${eventName}):`, data);
+                        if (!data.message) {
+                            console.error('Invalid Pusher data:', data);
                             return;
                         }
-                        const div = document.createElement('div');
-                        div.className = msg.sender_id === userId ? 'text-end mb-2' : 'text-start mb-2';
-                        div.innerHTML = `
-                            <small class="text-muted">${msg.sender.name}</small>
-                            <p class="bg-light p-2 rounded d-inline-block">${msg.content}</p>
-                            <small class="d-block text-muted">${new Date(msg.created_at).toLocaleTimeString()}</small>
-                        `;
-                        chatMessages.appendChild(div);
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                        const msg = data.message;
+                        if (currentConversationId !== msg.conversation_id.toString()) {
+                            console.log('Message from different conversation, ignoring:', msg.conversation_id);
+                            return;
+                        }
+                        appendMessage(msg, conversationId);
                     });
                 });
-            });
+                console.log('Subscribed to:', currentChannel);
+                channel.bind('pusher:subscription_error', (err) => {
+                    console.error('Subscription error:', err);
+                    setTimeout(() => subscribeChannel(conversationId), 1000);
+                });
+            };
 
             // Gửi tin nhắn
             const sendMessage = () => {
                 const conversationId = conversationIdInput.value;
-                const content = messageInput.value;
-                if (!conversationId || !content.trim()) {
-                    console.log('Conversation ID or message content is empty:', { conversationId, content });
+                const content = messageInput.value.trim();
+                if (!conversationId || !content) {
+                    console.log('Invalid input:', { conversationId, content });
                     return;
                 }
 
-                console.log('Sending message to conversation:', conversationId, 'Content:', content);
+                console.log('Sending message:', { conversationId, content });
                 fetch(`/api/conversations/${conversationId}/messages`, {
                     method: 'POST',
                     headers: {
@@ -324,10 +313,10 @@
                     body: JSON.stringify({ content })
                 })
                 .then(response => {
-                    console.log('Send Message Status:', response.status);
+                    console.log('Send message status:', response.status);
                     if (!response.ok) {
                         return response.json().then(err => {
-                            throw new Error(`Failed to send message: ${response.status} - ${err.error || 'Unknown error'}`);
+                            throw new Error(`HTTP ${response.status}: ${err.error || 'Unknown error'}`);
                         });
                     }
                     return response.json();
@@ -337,23 +326,75 @@
                     messageInput.value = '';
                 })
                 .catch(error => {
-                    console.error('Error sending message:', error.message);
-                    alert('Lỗi khi gửi tin nhắn: ' + error.message);
+                    console.error('Error sending message:', error);
+                    alert(`Lỗi gửi tin nhắn: ${error.message}`);
                 });
             };
 
-            // Gửi tin nhắn bằng nút "Gửi"
-            sendButton.addEventListener('click', function() {
-                console.log('Send button clicked');
-                sendMessage();
+            // Xử lý chọn conversation
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const conversationId = this.getAttribute('data-id');
+                    console.log('Selected conversation:', conversationId);
+                    currentConversationId = conversationId;
+                    conversationIdInput.value = conversationId;
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    loadMessages(conversationId);
+                    subscribeChannel(conversationId);
+                });
             });
 
-            // Gửi tin nhắn bằng Enter
-            messageInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    console.log('Enter key pressed');
-                    sendMessage();
-                }
+            // Gửi tin nhắn
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // Lắng nghe conversation mới
+            const newConversationChannel = pusher.subscribe('new-conversation');
+            newConversationChannel.bind('NewConversation', (data) => {
+                console.log('New conversation created:', data);
+                const conv = data.conversation;
+                const convItem = document.createElement('a');
+                convItem.className = 'list-group-item list-group-item-action conversation-item active';
+                convItem.setAttribute('data-id', conv.id);
+                convItem.setAttribute('data-user-name', conv.user?.name || 'Unknown');
+                convItem.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${conv.user?.name || 'Unknown'}</h6>
+                        <span class="badge bg-danger rounded-pill">New</span>
+                    </div>
+                    <small class="message-preview">Chưa có tin nhắn</small>
+                `;
+                conversationList.prepend(convItem);
+                
+                // Tự động chọn conversation mới
+                currentConversationId = conv.id;
+                conversationIdInput.value = conv.id;
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+                convItem.classList.add('active');
+                loadMessages(conv.id);
+                subscribeChannel(conv.id);
+
+                // Thêm event listener
+                convItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const conversationId = this.getAttribute('data-id');
+                    currentConversationId = conversationId;
+                    conversationIdInput.value = conversationId;
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    loadMessages(conversationId);
+                    subscribeChannel(conversationId);
+                });
             });
         });
     </script>
