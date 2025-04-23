@@ -113,6 +113,7 @@ Route::prefix('admin')
                     Route::post('store', [ProductController::class, 'store'])->name('store');
                     Route::get('{id}/edit', [ProductController::class, 'edit'])->name('edit');
                     Route::put('update/{id}', [ProductController::class, 'update'])->name('update');
+                    Route::get('show/{id}', [ProductController::class, 'show'])->name('show');
                     Route::delete('destroy/{id}', [ProductController::class, 'destroy'])->name('destroy');
                     Route::get('product_discontinued', [ProductController::class, 'productDiscontinued'])->name('productDiscontinued');
                 });

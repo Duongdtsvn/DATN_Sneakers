@@ -57,7 +57,7 @@ class ProductController extends Controller
         }
 
         $categories = Category::all();
-        $listProduct = $query->latest('id')->paginate(10);
+        $listProduct = $query->where('status', true)->latest('id')->paginate(10);
 
         return view('admin.products.index', compact('title', 'listProduct', 'categories'));
     }
@@ -174,6 +174,9 @@ class ProductController extends Controller
     public function show(string $id)
     {
         //
+        $product = Product::find($id);
+        $listVariant = ProductVariant::where('product_id', $id)->get();
+        return view('admin.products.show', compact('product','listVariant'));
     }
 
     /**
@@ -317,37 +320,34 @@ class ProductController extends Controller
     }
 
     private function handleProductVariants(Request $request, Product $product)
-{
-    $validatedData = $request->validate([
-        'product_variants' => 'required|array',
-        'product_variants.*.product_size_id' => 'required|exists:product_sizes,id',
-        'product_variants.*.quantity' => 'required|integer|min:0',
-        'product_variants.*.status' => 'nullable|in:0,1'
-    ], [
-        'product_variants.required' => 'Danh sách biến thể không được để trống!',
-        'product_variants.*.product_size_id.required' => 'Mỗi biến thể phải có product_size_id!',
-        'product_variants.*.product_size_id.exists' => 'Product size không hợp lệ!',
-        'product_variants.*.quantity.required' => 'Số lượng là bắt buộc!',
-        'product_variants.*.quantity.integer' => 'Số lượng phải là số nguyên!',
-        'product_variants.*.status.in' => 'Trạng thái chỉ được là 0 hoặc 1!',
-    ]);
+    {
+        $validatedData = $request->validate([
+            'product_variants' => 'required|array',
+            'product_variants.*.product_size_id' => 'required|exists:product_sizes,id',
+            'product_variants.*.quantity' => 'required|integer|min:0',
+            'product_variants.*.status' => 'nullable|in:0,1'
+        ], [
+            'product_variants.required' => 'Danh sách biến thể không được để trống!',
+            'product_variants.*.product_size_id.required' => 'Mỗi biến thể phải có product_size_id!',
+            'product_variants.*.product_size_id.exists' => 'Product size không hợp lệ!',
+            'product_variants.*.quantity.required' => 'Số lượng là bắt buộc!',
+            'product_variants.*.quantity.integer' => 'Số lượng phải là số nguyên!',
+            'product_variants.*.status.in' => 'Trạng thái chỉ được là 0 hoặc 1!',
+        ]);
 
-    foreach ($validatedData['product_variants'] as $variant) {
-        ProductVariant::updateOrCreate(
-            [
-                'product_id' => $product->id,
-                'product_size_id' => $variant['product_size_id']
-            ],
-            [
-                'quantity' => $variant['quantity'],
-                'status' => $variant['status'] ?? 1
-            ]
-        );
+        foreach ($validatedData['product_variants'] as $variant) {
+            ProductVariant::updateOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'product_size_id' => $variant['product_size_id']
+                ],
+                [
+                    'quantity' => $variant['quantity'],
+                    'status' => $variant['status'] ?? 1
+                ]
+            );
+        }
     }
-
-
-
-}
 
 
 

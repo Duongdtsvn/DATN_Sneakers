@@ -97,15 +97,15 @@
                                         <a href="{{ route('admin.products.edit', $item->id) }}" title="Chỉnh sửa">
                                             <i class="mdi mdi-pencil text-primary fs-18 border p-1"></i>
                                         </a>
-                                        <a href="{{ route('admin.product_variants.create', $item->id) }}"
-                                            title="Thêm biến thể">
+                                        <a href="{{ route('admin.products.show', $item->id) }}"
+                                            title="Xem chi tiết">
                                             <i class="mdi mdi-plus text-success fs-18 border p-1"></i>
                                         </a>
-                                        <a href="{{ route('admin.products.destroy', $item->id) }}"
+                                        {{-- <a href="{{ route('admin.products.destroy', $item->id) }}"
                                             onclick="return confirm('Bạn có chắc chắn muốn xoá sản phẩm này không?')"
                                             title="Xóa sản phẩm">
                                             <i class="mdi mdi-delete text-danger fs-18 border p-1"></i>
-                                        </a>
+                                        </a> --}}
                                     </td>
                                 </tr>
                             @endforeach

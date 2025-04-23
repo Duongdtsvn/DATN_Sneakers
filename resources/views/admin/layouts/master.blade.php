@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     @include('admin.layouts.partials.css')
-
+    @yield('css')
     {{-- <style>
         /* Ép hiển thị content và form */
         .content-page {
