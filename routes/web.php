@@ -15,7 +15,10 @@ use App\Http\Controllers\admin\PromotionController;
 use App\Http\Controllers\admin\ReviewController;
 use App\Http\Controllers\admin\SettingController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Auth\CommentController;
+
 use App\Http\Controllers\admin\SizeController;
+use App\Http\Controllers\ReplyController;
 use App\Models\ProductReview;
 use App\Http\Controllers\admin\DashboardStatisticsController;
 use App\Models\User;
@@ -48,6 +51,9 @@ Route::prefix('admin')
 
         Route::middleware(['auth', 'permission:manage_banners'])->group(function () {
             Route::get('chats', [ChatController::class, 'adminIndex'])->name('chats.index');
+        });
+        Route::middleware(['auth', 'permission:manage_banners'])->group(function () {
+            Route::get('comments', [CommentController::class, 'adminIndex'])->name('comments.index');
         });
 
         Route::middleware(['auth', 'permission:manage_news'])->group(function () {
@@ -152,3 +158,16 @@ Route::prefix('admin')
             Route::get('review', [ReviewController::class,'index'])->name('review.index');
        
     });
+
+    // bình luận
+    Route::prefix('admin')->middleware(['auth'])->group(function () {
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('admin.dashboard');
+    
+        Route::get('/comments', [CommentController::class, 'adminIndex'])->name('admin.comments.index');
+        Route::delete('/comments/{id}', [CommentController::class, 'destroy'])->name('admin.comments.destroy');
+        Route::post('/replies', [ReplyController::class, 'adminStore'])->name('admin.replies.store');
+    });
+
+    
