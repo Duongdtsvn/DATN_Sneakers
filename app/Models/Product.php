@@ -49,10 +49,7 @@ class Product extends Model
         return $this->belongsTo(Category::class, 'category_id');
     }
     // protected $fillable = ['name', 'price', 'stock'];
-    public function gender()
-    {
-        return $this->belongsTo(Gender::class);
-    }
+    
     public function brand()
     {
        return $this->belongsTo(Brand::class);
@@ -76,4 +73,11 @@ class Product extends Model
     //     return $this->variants()->min('promotional_price') ?? $this->variants()->min('price');
     // }
    
+     public function getDiscountPercentage()
+    {
+        if ($this->original_price > 0 && $this->discounted_price > 0) {
+            return (($this->original_price - $this->discounted_price) / $this->original_price) * 100;
+        }
+        return 0;
+    }
 }

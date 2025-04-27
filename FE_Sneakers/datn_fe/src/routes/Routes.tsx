@@ -34,6 +34,9 @@ import Payment from '../pages/Payment'
 import MomoCallback from '../pages/MomoCallback'
 import OrderSuccess from '../components/SuccesOrder'
 import OrdersPage from '../pages/OrdersPage'
+import ChatPopup from '../components/ChatPopup'
+import Wishlist from '../components/Wishlist'
+import CouponPopup from '../components/CouponPopup'
 
 const RoutesConfig = () => {
   return (
@@ -52,12 +55,12 @@ const RoutesConfig = () => {
               <ProductList />
               <TitleWithEffect1 />
               <ProductHot />
+              <CouponPopup />
               <PurchaseNotification />
+              <ChatPopup />
             </>
           }
         />
-        <Route path='/' element={<ProductList />} />
-       
         <Route path='/product-sale' element={<ProductSale />} />
         <Route path='/contact' element={<ContactPage />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
@@ -69,24 +72,21 @@ const RoutesConfig = () => {
         <Route path='/category/:id' element={<ProductCate />} />
         <Route path='/news/:id' element={<NewsDetail />} />
         <Route path='/cart' element={<Cart />} />
+        <Route path='/wishlist' element={<Wishlist />} />
         <Route path='/orders' element={<OrdersPage />} />
         <Route path='/payment' element={<Payment />} />
         <Route path='*' element={<NotFound />} />
-        <Route path='/' element={<SearchContainer />} />
-        <Route path='/momo-callback' element={<MomoCallback />} />
         <Route path='/search' element={<SearchResults />} />
+
+        <Route path='/momo-callback' element={<MomoCallback />} />
         <Route path='/order-success' element={<OrderSuccess />} />
-        {/* rau dưa footer */}
         <Route path='/about' element={<AboutUs />} />
         <Route path='/privacy-policy' element={<WarrantyPolicy />} />
-        {/* Bảo vệ router */}
         <Route element={<ProtectedRoute />}>
           <Route path='/profile' element={<ProfilePage />} />
           <Route path='/change-password' element={<ChangePasswordPage />} />
         </Route>
-        
       </Routes>
-
       <Footer />
       <BackToTop />
     </>

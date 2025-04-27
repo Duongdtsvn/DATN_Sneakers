@@ -1,141 +1,276 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+interface Product {
+  id: number
+  product_name: string
+  original_price: number
+  discounted_price: number
+  brand: { brand_name: string } | null
+  image_product: { image_product: string }[] | null
+  product_variants: { quantity: number; product_size: { name: string } }[] | null
+  rating?: number
+}
+
 const SearchResults: React.FC = () => {
-  const [results, setResults] = useState<any[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [sortOption, setSortOption] = useState<string>('')
+  const [sizeFilter, setSizeFilter] = useState<string>('')
+  const [availableSizes, setAvailableSizes] = useState<string[]>([])
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
 
-  const query = new URLSearchParams(location.search).get('query') || ''
-
   useEffect(() => {
-    const fetchResults = async () => {
-      if (!query) {
-        setResults([])
-        return
-      }
-
+    const fetchProducts = async () => {
       setLoading(true)
       setError(null)
 
+      const params = new URLSearchParams(location.search)
+      const query = params.get('query') || ''
+
       try {
-        const response = await fetch(`http://localhost:8000/api/products?query=${encodeURIComponent(query)}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error('Không thể tải dữ liệu')
-        }
-
+        const response = await fetch(
+          `http://localhost:8000/api/products/search?query=${encodeURIComponent(query)}&page=${currentPage}&per_page=12&sort=${sortOption}`
+        )
+        if (!response.ok) throw new Error(t('error_fetching_search_results'))
         const data = await response.json()
-        console.log('API data in SearchResults:', data)
-        if (data.success && Array.isArray(data.data)) {
-          const filteredResults = data.data.filter((item: any) =>
-            item.product_name.toLowerCase().includes(query.toLowerCase())
-          )
-          setResults(filteredResults)
-        } else {
-          setResults([])
+        console.log('SearchResults API response:', data)
+
+        if (!data.data || !data.data.data) {
+          throw new Error(t('invalid_search_results'))
         }
-      } catch (err) {
-        setError('Có lỗi xảy ra khi tải dữ liệu')
-        console.error(err)
+
+        const productsWithRating = data.data.data.map((product: Product) => ({
+          ...product,
+          rating: 4
+        }))
+
+        setProducts(productsWithRating)
+        setFilteredProducts(productsWithRating)
+
+        const sizes = new Set<string>()
+        productsWithRating.forEach((product: Product) => {
+          product.product_variants?.forEach((variant) => {
+            if (variant.quantity > 0) {
+              sizes.add(variant.product_size.name)
+            }
+          })
+        })
+        setAvailableSizes(Array.from(sizes).sort((a, b) => parseInt(a) - parseInt(b)))
+
+        setTotalPages(data.data.last_page)
+      } catch (err: any) {
+        setError(err.message || t('error_fetching_search_results'))
+        console.error('Fetch error:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchResults()
-  }, [query])
+    fetchProducts()
+  }, [location.search, currentPage, sortOption, t])
 
-  const handleProductClick = (id: number) => {
-    navigate(`/detail-product/${id}`)
+  useEffect(() => {
+    if (!sizeFilter) {
+      setFilteredProducts(products)
+    } else {
+      const filtered = products.filter((product) =>
+        product.product_variants?.some((variant) => variant.product_size.name === sizeFilter && variant.quantity > 0)
+      )
+      setFilteredProducts(filtered)
+    }
+  }, [sizeFilter, products])
+
+  const createSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
   }
 
-  return (
-    <div className='search-results p-4 max-w-7xl mx-auto'>
-      <h1 className='text-2xl font-bold mb-6'>Kết quả tìm kiếm cho: "{query}"</h1>
+  const handleProductClick = (id: number, productName: string) => {
+    const slug = createSlug(productName)
+    navigate(`/${slug}`, { state: { id } })
+  }
 
-      {loading && <p className='text-gray-500 text-center'>Đang tải...</p>}
-      {error && <p className='text-red-500 text-center'>{error}</p>}
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
-      {results.length > 0 ? (
-        <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8'>
-          {results.map((item) => (
-            <div
-              key={item.id}
-              className='bg-white shadow-lg rounded-lg p-4 text-center relative cursor-pointer hover:shadow-xl transition-shadow duration-300 h-[18rem]'
-              onClick={() => handleProductClick(item.id)}
-            >
-              {/* Phần trăm giảm giá (chỉ hiển thị nếu có giá) */}
-              {item.original_price && item.discounted_price && (
-                <div className='absolute top-0 left-0 bg-red-600 text-white text-xs px-2 py-1 rounded-tr-md z-10'>
-                  <p className='text-sm text-white-500'>
-                    -
-                    {Math.round(
-                      ((Number(item.original_price) - Number(item.discounted_price)) / Number(item.original_price)) *
-                        100
-                    )}
-                    %
-                  </p>
-                </div>
-              )}
+  const calculateDiscountPercentage = (originalPrice: number, discountedPrice: number): number => {
+    if (originalPrice <= 0) return 0
+    return Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)
+  }
 
-              {/* Hình ảnh với hiệu ứng hover */}
-              <div className='relative group'>
-                <img
-                  src={item.image}
-                  alt={item.product_name}
-                  className='w-full h-48 object-cover rounded-md mb-4 transition-all duration-300 ease-in-out'
-                />
-                <div className='absolute inset-0 bg-gradient-to-r from-transparent to-transparent group-hover:from-white group-hover:to-white opacity-30 transition-all duration-300 ease-in-out z-0' />
-              </div>
-
-              {/* Tên sản phẩm */}
-              <h3 className='text-sm mb-2'>{item.product_name}</h3>
-
-              {/* Giá (chỉ hiển thị nếu có giá) */}
-              {item.original_price && item.discounted_price ? (
-                <div className='flex justify-center items-center mb-2'>
-                  <p className='text-gray-500 line-through text-sm mr-2'>
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(item.price))}
-                  </p>
-                  <p className='text-sm font-semibold text-red-500'>
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-                      Number(item.discounted_price)
-                    )}
-                  </p>
-                </div>
-              ) : (
-                <p className='text-sm text-gray-500 mb-2'>Giá không khả dụng</p>
-              )}
-
-              {/* Đánh giá (rating) */}
-              <div className='my-2'>
-                {Array.from({ length: item.rating || 0 }, (_, index) => (
-                  <svg
-                    key={index}
-                    xmlns='http://www.w3.org/2000/svg'
-                    fill='yellow'
-                    viewBox='0 0 24 24'
-                    width='20'
-                    height='20'
-                    className='inline'
-                  >
-                    <path d='M12 .587l3.668 7.431 8.232 1.186-5.958 5.759 1.406 8.206-7.348-3.86-7.348 3.86 1.406-8.206-5.958-5.759 8.232-1.186z' />
-                  </svg>
-                ))}
-              </div>
+  const SkeletonLoading = () => (
+    <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8'>
+      {Array(12)
+        .fill(0)
+        .map((_, index) => (
+          <div key={index} className='bg-white shadow-lg rounded-lg p-4 text-center relative h-[18rem]'>
+            <div className='absolute top-0 left-0 h-6 w-12 bg-gray-300 rounded-tr-md'></div>
+            <div className='w-full h-48 bg-gray-300 rounded-md mb-4'></div>
+            <div className='h-4 w-3/4 bg-gray-300 rounded mx-auto mb-2'></div>
+            <div className='flex justify-center items-center mb-2 space-x-2'>
+              <div className='h-4 w-16 bg-gray-300 rounded'></div>
+              <div className='h-4 w-20 bg-gray-300 rounded'></div>
             </div>
-          ))}
+          </div>
+        ))}
+    </div>
+  )
+
+  return (
+    <div className='container mx-auto px-4 sm:px-8 md:px-16 my-12'>
+      <div className='mb-6'>
+        <h2 className='text-2xl font-bold mb-4'>{t('search_results')}</h2>
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+          {/* Bộ lọc giá */}
+          <div className='flex items-center gap-2'>
+            <span className='text-sm font-medium text-gray-700'>{t('sort_by_price')}:</span>
+            <button
+              onClick={() => setSortOption(sortOption === 'low-to-high' ? '' : 'low-to-high')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                sortOption === 'low-to-high' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              {t('sort_low_to_high')}
+            </button>
+            <button
+              onClick={() => setSortOption(sortOption === 'high-to-low' ? '' : 'high-to-low')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                sortOption === 'high-to-low' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              {t('sort_high_to_low')}
+            </button>
+          </div>
+          {/* Bộ lọc size */}
+          <div className='flex items-center gap-2 flex-wrap'>
+            <span className='text-sm font-medium text-gray-700'>{t('filter_by_size')}:</span>
+            <button
+              onClick={() => setSizeFilter('')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${
+                sizeFilter === '' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              {t('filter_by_size_all')}
+            </button>
+            {availableSizes.map((size) => (
+              <button
+                key={size}
+                onClick={() => setSizeFilter(sizeFilter === size ? '' : size)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${
+                  sizeFilter === size ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : (
-        !loading && <p className='text-gray-500 text-center'>Không tìm thấy kết quả nào</p>
+      </div>
+      {loading && <SkeletonLoading />}
+      {error && <p className='text-red-500'>{error}</p>}
+      {!loading && !error && filteredProducts.length === 0 && <p className='text-gray-600'>{t('no_products_found')}</p>}
+      {!loading && !error && filteredProducts.length > 0 && (
+        <>
+          <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8'>
+            {filteredProducts.map((product) => {
+              const discountPercentage = calculateDiscountPercentage(product.original_price, product.discounted_price)
+              return (
+                <div
+                  key={product.id}
+                  className='bg-white shadow-lg rounded-lg p-4 text-center relative cursor-pointer hover:shadow-xl transition-shadow duration-300 h-[18rem]'
+                  onClick={() => handleProductClick(product.id, product.product_name)}
+                >
+                  {discountPercentage > 0 && (
+                    <div className='absolute top-0 left-0 bg-red-600 text-white text-xs px-2 py-1 rounded-tr-md z-10'>
+                      <p className='text-sm text-white-500'>-{discountPercentage}%</p>
+                    </div>
+                  )}
+                  <div className='relative group'>
+                    <img
+                      src={product.image_product?.[0]?.image_product || 'https://via.placeholder.com/150'}
+                      alt={product.product_name}
+                      className='w-full h-48 object-cover rounded-md mb-4 transition-all duration-300 ease-in-out'
+                    />
+                    <div className='absolute inset-0 bg-gradient-to-r from-transparent to-transparent group-hover:from-white group-hover:to-white opacity-30 transition-all duration-200 ease-in-out z-0' />
+                  </div>
+                  <h3 className='text-sm mb-2 whitespace-nowrap overflow-hidden text-ellipsis'>
+                    {product.product_name}
+                  </h3>
+                  <div className='flex justify-center items-center mb-2'>
+                    <p className='text-gray-500 line-through text-sm mr-2'>
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                        product.original_price
+                      )}
+                    </p>
+                    <p className='text-sm text-red-500 font-bold'>
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                        product.discounted_price
+                      )}
+                    </p>
+                  </div>
+                  {/* <div className='my-2'>
+                    {Array.from({ length: product.rating || 4 }, (_, index) => (
+                      <svg
+                        key={index}
+                        xmlns='http://www.w3.org/2000/svg'
+                        fill='yellow'
+                        viewBox='0 0 24 24'
+                        width='20'
+                        height='20'
+                        className='inline'
+                      >
+                        <path d='M12 .587l3.668 7.431 8.232 1.186-5.958 5.759 1.406 8.206-7.348-3.86-7.348 3.86 1.406-8.206-5.958-5.759 8.232-1.186z' />
+                      </svg>
+                    ))}
+                  </div> */}
+                </div>
+              )
+            })}
+          </div>
+          {totalPages > 1 && (
+            <div className='flex justify-center mt-8'>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                className='px-4 py-2 mx-1 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 disabled:opacity-50'
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`px-4 py-2 mx-1 rounded-lg ${
+                    currentPage === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                className='px-4 py-2 mx-1 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 disabled:opacity-50'
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

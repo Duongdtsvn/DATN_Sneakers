@@ -142,14 +142,20 @@
                                                                     {{ $message }}</p>
                                                             @enderror
                                                         </div>
+
                                                         <div class="col-md-2">
                                                             <button type="button"class="remove-row btn btn-danger">Xóa</button>
                                                         </div>
-
+                                                        @error("product_variants")
+                                                        <p class="text-danger position-absolute">
+                                                            {{ $message }}
+                                                        </p>
+                                                         @enderror
                                                     </div>
                                             @endforeach
+                                             
                                         </div>
-
+                                      
                                         <div class="col-lg-3">
                                                 <button type="button" id="add-variant" class="btn btn-success mb-2">➕
                                                              Thêm Biến Thể</button>

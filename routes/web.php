@@ -14,7 +14,11 @@ use App\Http\Controllers\admin\ProductVariantController;
 use App\Http\Controllers\admin\PromotionController;
 use App\Http\Controllers\admin\ReviewController;
 use App\Http\Controllers\admin\SettingController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Auth\CommentController;
+
 use App\Http\Controllers\admin\SizeController;
+use App\Http\Controllers\ReplyController;
 use App\Models\ProductReview;
 use App\Http\Controllers\admin\DashboardStatisticsController;
 use App\Models\User;
@@ -45,6 +49,13 @@ Route::prefix('admin')
             Route::resource('banners', BannerController::class);
         });
 
+        Route::middleware(['auth', 'permission:manage_banners'])->group(function () {
+            Route::get('chats', [ChatController::class, 'adminIndex'])->name('chats.index');
+        });
+        Route::middleware(['auth', 'permission:manage_banners'])->group(function () {
+            Route::get('comments', [CommentController::class, 'adminIndex'])->name('comments.index');
+        });
+
         Route::middleware(['auth', 'permission:manage_news'])->group(function () {
             Route::resource('news', NewsController::class);
         });
@@ -66,6 +77,7 @@ Route::prefix('admin')
                 ->as('categories.')
                 ->group(function () {
                     Route::get('/', [CategoryController::class, 'index'])->name('index');
+                    
                     Route::get('create', [CategoryController::class, 'create'])->name('create');
                     Route::post('store', [CategoryController::class, 'store'])->name('store');
                     Route::get('{id}/edit', [CategoryController::class, 'edit'])->name('edit');
@@ -101,6 +113,7 @@ Route::prefix('admin')
                     Route::post('store', [ProductController::class, 'store'])->name('store');
                     Route::get('{id}/edit', [ProductController::class, 'edit'])->name('edit');
                     Route::put('update/{id}', [ProductController::class, 'update'])->name('update');
+                    Route::get('show/{id}', [ProductController::class, 'show'])->name('show');
                     Route::delete('destroy/{id}', [ProductController::class, 'destroy'])->name('destroy');
                     Route::get('product_discontinued', [ProductController::class, 'productDiscontinued'])->name('productDiscontinued');
                 });
@@ -146,3 +159,16 @@ Route::prefix('admin')
             Route::get('review', [ReviewController::class,'index'])->name('review.index');
        
     });
+
+    // bình luận
+    Route::prefix('admin')->middleware(['auth'])->group(function () {
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('admin.dashboard');
+    
+        Route::get('/comments', [CommentController::class, 'adminIndex'])->name('admin.comments.index');
+        Route::delete('/comments/{id}', [CommentController::class, 'destroy'])->name('admin.comments.destroy');
+        Route::post('/replies', [ReplyController::class, 'adminStore'])->name('admin.replies.store');
+    });
+
+    

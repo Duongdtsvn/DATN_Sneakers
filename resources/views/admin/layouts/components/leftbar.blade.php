@@ -85,7 +85,18 @@
                         <span> Quản lý đánh giá </span>
                     </a>
                 </li>
-
+                <li>
+                    <a class='tp-link' href='{{ route('admin.chats.index') }}'>
+                        <i data-feather="clipboard"></i>
+                        <span> Quản lý Chat KH </span>
+                    </a>
+                </li>
+                <li>
+                    <a class='tp-link' href='{{ route('admin.comments.index') }}'>
+                        <i data-feather="clipboard"></i>
+                        <span> Quản lý bình luận </span>
+                    </a>
+                </li>
                 <li>
                     <a class='tp-link' href='{{ route('admin.users.index') }}'>
                         <i data-feather="users"></i>

@@ -29,7 +29,7 @@
                                 <th>Hành Động</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody> 
                             @foreach ($category as $item)
                                 <tr>
                                     <td>{{ $item->id }}</td>

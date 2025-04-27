@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\MomoController;
+use App\Http\Controllers\api\VnpaypaymentController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\api\HomeController;
 use App\Http\Controllers\Api\NewsController;
@@ -18,11 +19,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\ProductController;
-
+use App\Http\Controllers\Auth\CommentController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\ReplyController;
 
 use App\Http\Controllers\Api\StatisticsController;
-
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\admin\PromotionController;
 use App\Http\Controllers\Api\MomopaymentController;
 use App\Http\Controllers\api\ProductReviewController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\FilterProductsController;
+use App\Http\Controllers\VnPayController;
 
 Route::apiResource('banners', BannerController::class);
 
@@ -102,6 +105,7 @@ Route::get('/products-related/{id}', [DetailController::class, 'getRelatedProduc
 Route::get('/brands', [HomeController::class, 'getBrands']);
 Route::get('/productbybrand/{id}', [HomeController::class, 'brandsByProduct']);
 Route::get('/products/top-views', [HomeController::class, 'getTopViewedProducts']);
+Route::get('/products/sale', [HomeController::class, 'productSale']);
 Route::middleware('auth:sanctum')->post('/review', [ProductReviewController::class, 'store']);
 Route::get('/products/reviews/{id}', [ProductReviewController::class, 'getReviewsByProduct']);
 
@@ -114,6 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('carts/remove/{cart_item_id}', [CartController::class, 'removeFromCart']);
     Route::get('/orders/{id}', [OrderController::class, 'orderDetails']);
     Route::post('/orders/buy/{product_name}', [OrderController::class, 'buyProductByName']);
+
    
 });
 
@@ -126,12 +131,38 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/buy/{product_name}', [OrderController::class, 'buyProductByName']);
 });
 //lọc sp
-Route::get('/products/filter', [filterProductsController::class, 'filterProducts']);
+Route::get('/products/search', [FilterProductsController::class, 'search']);
 
 // MomoPayment 
 
 
 
 Route::post('/momo/create', [MomoController::class, 'createPayment']);
+
+
+// VnpayPayment
+Route::get('/vnpay-return', [VnPayController::class, 'vnpayReturn']);
+
+
 Route::get('/momo/callback', [MomoController::class, 'callback']);
 Route::post('/momo/ipn', [MomoController::class, 'ipn']);
+
+
+
+// realtime pusher
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/conversations', [ChatController::class, 'getConversations']);
+    Route::post('/conversations/get-or-create', [ChatController::class, 'getOrCreateConversation']);
+    Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
+    Route::post('/conversations/{conversation}/assign', [ChatController::class, 'assignConversation']);
+});
+//  bình luận sản phẩm
+Route::get('/detail-product/{id}', [DetailController::class, 'getProductDetail']);
+Route::get('/detail-product/{id}/comments', [CommentController::class, 'index']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/comments', [CommentController::class, 'store']);
+    Route::delete('/comments/{id}', [CommentController::class, 'apiDestroy']);
+    Route::post('/replies', [ReplyController::class, 'store']); // Thêm route này
+});
+
